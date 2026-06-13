@@ -60,5 +60,5 @@ Wave 4  评测闭环
 | subagent | ✓ | ✓ | ✓ | ✓ | ✓ |
 | kernel | ✓ | ✓ | ✓ | ✓ | ✓ |
 | verifier | ✓ | ✓ | ✓ | ✓ | ✓ |
-| pipeline | ☐ | ☐ | ☐ | ☐ | ☐ |
+| pipeline | ✓ | ✓ | ✓ | ✓ | ✓ |
 | eval | ☐ | ☐ | ☐ | ☐ | ☐ |
