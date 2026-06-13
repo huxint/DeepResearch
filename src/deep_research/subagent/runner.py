@@ -90,7 +90,7 @@ class Subagent:
                 return response.text
 
             try:
-                return schema.model_validate_json(response.text)
+                return schema.model_validate_json(self._json_payload_text(response.text))
             except ValidationError as exc:
                 if attempt == retry_limit:
                     raise ValidationFailed(f"子 Agent 输出校验失败：{exc}") from exc
@@ -131,7 +131,9 @@ class Subagent:
         fields = ", ".join(schema.model_fields)
         return (
             f"{prompt}\n\n"
-            "Return only a JSON object with no markdown fences or commentary.\n"
+            "Return only one valid JSON object with no markdown fences or commentary. "
+            "The response must parse with json.loads. "
+            "Escape newlines and quotes inside string values.\n"
             f"Schema: {schema.__name__}\n"
             f"Required fields: {fields}"
         )
@@ -145,5 +147,13 @@ class Subagent:
             f"{context.error}\n\n"
             "Previous response:\n"
             f"{context.previous_output}\n\n"
-            "Return only a corrected response that matches the requested schema."
+            "Return only one corrected valid JSON object that matches the requested schema. "
+            "The response must parse with json.loads. "
+            "Escape newlines and quotes inside string values."
         )
+
+    def _json_payload_text(self, text: str) -> str:
+        lines = text.strip().splitlines()
+        if len(lines) >= 3 and lines[0].startswith("```") and lines[-1].strip() == "```":
+            return "\n".join(lines[1:-1]).strip()
+        return text

@@ -112,6 +112,24 @@ async def test_valid_schema_output_returns_validated_object() -> None:
 
     assert result == _Answer(answer="ok")
     assert provider.requests[0].model == "gpt-test"
+    prompt = provider.requests[0].messages[0]["content"]
+    assert "valid JSON object" in prompt
+    assert "json.loads" in prompt
+    assert "Escape newlines and quotes" in prompt
+
+
+@pytest.mark.asyncio
+async def test_schema_output_can_be_wrapped_in_json_fence() -> None:
+    provider = _FakeProvider(responses=[_response('```json\n{"answer": "ok"}\n```')])
+    subagent = Subagent(
+        provider=provider,
+        budget=BudgetPool(limit_usd=1.0),
+        default_model="gpt-test",
+    )
+
+    result = await subagent.run("Return JSON.", schema=_Answer)
+
+    assert result == _Answer(answer="ok")
 
 
 @pytest.mark.asyncio
