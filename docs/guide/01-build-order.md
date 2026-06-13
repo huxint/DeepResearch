@@ -59,6 +59,6 @@ Wave 4  评测闭环
 | mcp-tools | ✓ | ✓ | ✓ | ✓ | ✓ |
 | subagent | ✓ | ✓ | ✓ | ✓ | ✓ |
 | kernel | ✓ | ✓ | ✓ | ✓ | ✓ |
-| verifier | ☐ | ☐ | ☐ | ☐ | ☐ |
+| verifier | ✓ | ✓ | ✓ | ✓ | ✓ |
 | pipeline | ☐ | ☐ | ☐ | ☐ | ☐ |
 | eval | ☐ | ☐ | ☐ | ☐ | ☐ |
