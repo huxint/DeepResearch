@@ -56,7 +56,7 @@ Wave 4  评测闭环
 | cross-cutting | — | ✓ | ✓ | ✓ | ✓ |
 | provider-pool | ✓ | ✓ | ✓ | ✓ | ✓ |
 | journal | ✓ | ✓ | ✓ | ✓ | ✓ |
-| mcp-tools | ✓ | ☐ | ☐ | ☐ | ☐ |
+| mcp-tools | ✓ | ✓ | ✓ | ✓ | ✓ |
 | subagent | ☐ | ☐ | ☐ | ☐ | ☐ |
 | kernel | ☐ | ☐ | ☐ | ☐ | ☐ |
 | verifier | ☐ | ☐ | ☐ | ☐ | ☐ |
