@@ -4,14 +4,28 @@
 **致命错误**：``load_settings`` 在 config 接缝把 pydantic 的 ``ValidationError`` 翻译成
 ``ConfigMissing`` 并 fail-loud，不静默用默认值兜底。
 
-注意：各 Provider/Key 的精确配置形态归 [[provider-pool]] 拥有（见 modules/provider-pool.md §4），
-本处只聚合全局开关，避免 Wave 0 与 Wave 1 形成依赖环。
+Provider/Key 的精确配置形态归 [[provider-pool]] 拥有（见 modules/provider-pool.md §4），
+本处聚合启动所需配置并在进程入口一次性校验。
 """
 
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from deep_research.cross_cutting.errors import ConfigMissing
+from deep_research.provider_pool import ProviderConfig
+
+
+def _new_args() -> list[str]:
+    return []
+
+
+class MCPStdioServerConfig(BaseModel):
+    """MCP stdio server 启动配置。"""
+
+    command: str
+    args: list[str] = Field(default_factory=_new_args)
+    env: dict[str, str] | None = None
+    cwd: str | None = None
 
 
 class Settings(BaseSettings):
@@ -21,6 +35,9 @@ class Settings(BaseSettings):
 
     budget_usd: float
     default_model: str
+    providers: list[ProviderConfig] = Field(min_length=1)
+    mcp_server: MCPStdioServerConfig | None = None
+    journal_path: str = ".deep_research/journal.sqlite3"
     request_timeout_s: float = 30.0
     log_level: str = "INFO"
 

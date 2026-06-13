@@ -81,7 +81,7 @@ class Subagent:
             response = await self._provider.call(
                 LLMRequest(
                     model=selected_model,
-                    messages=self._messages_for(current_prompt),
+                    messages=self._messages_for(current_prompt, schema=schema),
                 )
             )
             self._charge(response)
@@ -117,9 +117,24 @@ class Subagent:
             remaining_usd=self._budget.remaining_usd(),
         )
 
-    def _messages_for(self, prompt: str) -> list[dict[str, str]]:
-        chat_prompt = ChatPrompt(messages=[ChatMessage(role="user", content=prompt)])
+    def _messages_for(
+        self,
+        prompt: str,
+        *,
+        schema: type[BaseModel] | None,
+    ) -> list[dict[str, str]]:
+        content = prompt if schema is None else self._schema_prompt(prompt=prompt, schema=schema)
+        chat_prompt = ChatPrompt(messages=[ChatMessage(role="user", content=content)])
         return [message.model_dump() for message in chat_prompt.messages]
+
+    def _schema_prompt(self, *, prompt: str, schema: type[BaseModel]) -> str:
+        fields = ", ".join(schema.model_fields)
+        return (
+            f"{prompt}\n\n"
+            "Return only a JSON object with no markdown fences or commentary.\n"
+            f"Schema: {schema.__name__}\n"
+            f"Required fields: {fields}"
+        )
 
     def _retry_prompt(self, *, original_prompt: str, context: ValidationRetryContext) -> str:
         return (

@@ -199,6 +199,49 @@ async def test_call_circuits_rate_limited_key_and_fails_over() -> None:
 
 
 @pytest.mark.asyncio
+async def test_call_parses_openai_chat_completion_response_and_cost() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "choices": [{"message": {"content": '{"answer": "ok"}'}}],
+                "usage": {"prompt_tokens": 1000, "completion_tokens": 2000},
+            },
+        )
+
+    pool = ProviderPool(
+        [
+            ProviderConfig(
+                name="openai",
+                endpoint="https://api.example.test/v1/chat/completions",
+                keys=[
+                    ProviderKeyConfig(
+                        key_id="a",
+                        api_key="secret-a",
+                        rpm=60,
+                        max_concurrency=1,
+                    )
+                ],
+                default_model="gpt-test",
+                response_format="openai_chat",
+                input_usd_per_1m=1.0,
+                output_usd_per_1m=2.0,
+            )
+        ],
+        transport=httpx.MockTransport(handler),
+    )
+
+    response = await pool.call(
+        LLMRequest(model="gpt-test", messages=[{"role": "user", "content": "hi"}])
+    )
+
+    assert response.text == '{"answer": "ok"}'
+    assert response.usage.input_tokens == 1000
+    assert response.usage.output_tokens == 2000
+    assert response.usage.cost_usd == 0.005
+
+
+@pytest.mark.asyncio
 async def test_call_circuits_timed_out_key_and_fails_over() -> None:
     requested_keys: list[str] = []
 

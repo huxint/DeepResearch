@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from types import TracebackType
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from deep_research.cross_cutting.budget import Usage
 from deep_research.cross_cutting.errors import NoKeysAvailable, RateLimited, Timeout
@@ -44,6 +44,24 @@ class _KeyState:
 class _ProviderWireResponse(BaseModel):
     text: str
     usage: Usage
+
+
+class _OpenAIUsage(BaseModel):
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+
+
+class _OpenAIMessage(BaseModel):
+    content: str
+
+
+class _OpenAIChoice(BaseModel):
+    message: _OpenAIMessage
+
+
+class _OpenAIChatCompletion(BaseModel):
+    choices: list[_OpenAIChoice] = Field(min_length=1)
+    usage: _OpenAIUsage
 
 
 class _AcquireContext:
@@ -122,6 +140,17 @@ class ProviderPool:
     async def aclose(self) -> None:
         await self._client.aclose()
 
+    async def __aenter__(self) -> ProviderPool:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        await self.aclose()
+
     def snapshot(self, key_id: str) -> KeySnapshot:
         state = self._state_by_key_id[key_id]
         now = self._now()
@@ -186,12 +215,9 @@ class ProviderPool:
                 raise RateLimited(f"provider 限流：{state.provider.name}/{state.config.key_id}")
 
             response.raise_for_status()
-            wire_response = _ProviderWireResponse.model_validate(response.json())
-            return LLMResponse(
-                text=wire_response.text,
-                usage=wire_response.usage,
-                provider=state.provider.name,
-                key_id=state.config.key_id,
+            return self._parse_response(
+                payload=response.json(),
+                state=state,
                 status_code=response.status_code,
             )
 
@@ -204,6 +230,42 @@ class ProviderPool:
         headers = state.provider.headers.copy()
         headers["Authorization"] = f"Bearer {state.config.api_key}"
         return headers
+
+    def _parse_response(
+        self,
+        *,
+        payload: object,
+        state: _KeyState,
+        status_code: int,
+    ) -> LLMResponse:
+        if state.provider.response_format == "openai_chat":
+            chat = _OpenAIChatCompletion.model_validate(payload)
+            usage = Usage(
+                input_tokens=chat.usage.prompt_tokens,
+                output_tokens=chat.usage.completion_tokens,
+                cost_usd=self._openai_chat_cost_usd(state=state, usage=chat.usage),
+            )
+            return LLMResponse(
+                text=chat.choices[0].message.content,
+                usage=usage,
+                provider=state.provider.name,
+                key_id=state.config.key_id,
+                status_code=status_code,
+            )
+
+        wire_response = _ProviderWireResponse.model_validate(payload)
+        return LLMResponse(
+            text=wire_response.text,
+            usage=wire_response.usage,
+            provider=state.provider.name,
+            key_id=state.config.key_id,
+            status_code=status_code,
+        )
+
+    def _openai_chat_cost_usd(self, *, state: _KeyState, usage: _OpenAIUsage) -> float:
+        input_cost = usage.prompt_tokens * state.provider.input_usd_per_1m / 1_000_000
+        output_cost = usage.completion_tokens * state.provider.output_usd_per_1m / 1_000_000
+        return input_cost + output_cost
 
     def _backoff_seconds(self, attempt: int) -> float:
         return self._backoff_base_s * (2**attempt)

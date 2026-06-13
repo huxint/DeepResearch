@@ -33,7 +33,7 @@ Wave 4  评测闭环
 
 ```
 配置 → 单 key provider → 最小 subagent(单 schema) → 最小 kernel(只 agent+parallel)
-     → 单 search 工具 → Plan / Search / Write 三段(Verify 先 stub)
+     → 单 search 工具 → Plan / Search / Verify / Write 四段
      → 对一道题产出"粗糙但带引用"的报告 ✅ 端到端打通
 ```
 

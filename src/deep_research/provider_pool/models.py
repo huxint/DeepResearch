@@ -1,8 +1,12 @@
 """provider-pool 的边界数据模型。"""
 
-from pydantic import BaseModel, Field, PositiveInt
+from typing import Literal
+
+from pydantic import BaseModel, Field, NonNegativeFloat, PositiveInt
 
 from deep_research.cross_cutting.budget import Usage
+
+type ProviderResponseFormat = Literal["deep_research", "openai_chat"]
 
 
 class ProviderKeyConfig(BaseModel):
@@ -23,6 +27,9 @@ class ProviderConfig(BaseModel):
     keys: list[ProviderKeyConfig]
     default_model: str
     headers: dict[str, str] = Field(default_factory=dict)
+    response_format: ProviderResponseFormat = "deep_research"
+    input_usd_per_1m: NonNegativeFloat = 0.0
+    output_usd_per_1m: NonNegativeFloat = 0.0
 
 
 class LLMRequest(BaseModel):
