@@ -57,7 +57,7 @@ Wave 4  评测闭环
 | provider-pool | ✓ | ✓ | ✓ | ✓ | ✓ |
 | journal | ✓ | ✓ | ✓ | ✓ | ✓ |
 | mcp-tools | ✓ | ✓ | ✓ | ✓ | ✓ |
-| subagent | ☐ | ☐ | ☐ | ☐ | ☐ |
+| subagent | ✓ | ✓ | ✓ | ✓ | ✓ |
 | kernel | ☐ | ☐ | ☐ | ☐ | ☐ |
 | verifier | ☐ | ☐ | ☐ | ☐ | ☐ |
 | pipeline | ☐ | ☐ | ☐ | ☐ | ☐ |
